@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صفحة المسؤول</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <script>
+        var users = JSON.parse(localStorage.getItem('users')) || {};
+        var withdrawalRequests = JSON.parse(localStorage.getItem('withdrawalRequests')) || [];
+
+        // Simulate deposit function (for demonstration purposes)
+        function simulateDeposit(amount) {
+            // Here you can simulate an actual deposit process to your TRC-20 address
+            alert('تم تقديم طلب الإيداع بنجاح. يرجى تحويل المبلغ إلى عنوان TRC-20 المحدد.');
+        }
+
+        // Function to confirm deposit and update user's balance
+        function confirmDeposit(username, index) {
+            if (users[username] && users[username].pendingDeposits[index]) {
+                var deposit = users[username].pendingDeposits[index];
+                if (!deposit.confirmed) {
+                    users[username].balance += parseFloat(deposit.amount);
+                    deposit.confirmed = true;
+                    localStorage.setItem('users', JSON.stringify(users));
+                    var newBalance = users[username].balance.toFixed(2);
+                    alert('تم تأكيد الإيداع بنجاح. الرصيد الحالي للمستخدم: $' + newBalance);
+                    activateOffer(username); // Activate offer upon deposit confirmation
+                    loadPendingDeposits();
+                }
+            }
+        }
+
+        // Function to delete a pending deposit
+        function deleteDeposit(username, index) {
+            if (users[username] && users[username].pendingDeposits[index]) {
+                var deposit = users[username].pendingDeposits[index];
+                if (!deposit.confirmed) {
+                    users[username].pendingDeposits.splice(index, 1);
+                    localStorage.setItem('users', JSON.stringify(users));
+                    alert('تم حذف الإيداع بنجاح.');
+                    loadPendingDeposits();
+                } else {
+                    alert('لا يمكن حذف الإيداع المؤكد.');
+                }
+            }
+        }
+
+        // Function to activate offer for the user upon deposit confirmation
+        function activateOffer(username) {
+            // Assume you have a function or logic to activate the offer for the user
+            // For demonstration purposes, we will alert that the offer is activated
+            alert('تم تفعيل العرض للمستخدم: ' + username);
+        }
+
+        // Function to load pending deposits and display them
+        function loadPendingDeposits() {
+            var pendingDepositsContainer = document.getElementById('pending-deposits');
+            pendingDepositsContainer.innerHTML = '';
+
+            for (var username in users) {
+                if (users.hasOwnProperty(username)) {
+                    var user = users[username];
+                    if (user.pendingDeposits) {
+                        user.pendingDeposits.forEach(function(deposit, index) {
+                            if (!deposit.confirmed) {
+                                var depositElement = document.createElement('div');
+                                depositElement.className = 'pending-deposit';
+                                depositElement.innerHTML = '<p>اسم المستخدم: ' + username + '</p>' +
+                                                           '<p>المبلغ: $' + deposit.amount + '</p>' +
+                                                           '<p>عنوان TRC-20: ' + deposit.trc20Address + '</p>' +
+                                                           '<button onclick="confirmDeposit(\'' + username + '\', ' + index + ')">تأكيد الإيداع</button>' +
+                                                           '<button onclick="deleteDeposit(\'' + username + '\', ' + index + ')">حذف الإيداع</button>';
+                                pendingDepositsContainer.appendChild(depositElement);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+       
+
+        // Function to view pending withdrawals
+        function viewPendingWithdrawals() {
+            var output = document.getElementById('pending-withdrawals');
+            output.innerHTML = '';
+            withdrawalRequests.forEach(function(request, index) {
+                if (!request.confirmed) {
+                    var listItem = document.createElement('li');
+                    listItem.innerHTML = `<strong>${request.user}</strong> طلب سحب بمبلغ ${request.amount} إلى عنوان ${request.trc20Address} في ${new Date(request.requestedAt).toLocaleString()}. <button onclick="confirmWithdrawal(${index})">تأكيد السحب</button> <button onclick="deleteWithdrawal(${index})">حذف السحب</button>`;
+                    output.appendChild(listItem);
+                }
+            });
+        }
+
+        // Function to load activated offers and display them
+        function loadActivatedOffers() {
+            var activatedOffersContainer = document.getElementById('activated-offers');
+            activatedOffersContainer.innerHTML = '';
+
+            for (var username in users) {
+                if (users.hasOwnProperty(username)) {
+                    var user = users[username];
+                    if (user.activatedPlans) {
+                        for (var plan in user.activatedPlans) {
+                            if (user.activatedPlans.hasOwnProperty(plan)) {
+                                var planData = user.activatedPlans[plan];
+                                var offerElement = document.createElement('div');
+                                offerElement.className = 'activated-offer';
+                                offerElement.innerHTML = '<p>اسم المستخدم: ' + username + '</p>' +
+                                                         '<p>الخطة: ' + plan + '</p>' +
+                                                         '<p>السعر: $' + planData.price.toFixed(2) + '</p>' +
+                                                         '<p>الربح اليومي: $' + planData.dailyProfit.toFixed(2) + '</p>' +
+                                                         '<p>تاريخ البدء: ' + new Date(planData.activatedAt).toLocaleDateString() + '</p>' +
+                                                         '<p>تاريخ الانتهاء: ' + new Date(planData.expiresAt).toLocaleDateString() + '</p>';
+                                activatedOffersContainer.appendChild(offerElement);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        window.onload = function() {
+            loadPendingDeposits();
+            loadActivatedOffers();
+            viewPendingWithdrawals();
+        };
+    </script>
+</head>
+<body>
+    <header>
+        <h1>صفحة المسؤول</h1>
+    </header>
+
+    <main>
+        <section id="pending-deposits">
+            <h2>الإيداعات المعلقة</h2>
+            <!-- سيتم إدراج الإيداعات المعلقة هنا ديناميكيًا -->
+        </section>
+
+       
+
+        <section id="activated-offers">
+            <h2>العروض المفعلة</h2>
+            <!-- سيتم إدراج العروض المفعلة هنا ديناميكيًا -->
+        </section>
+    </main>
+
+    <footer>
+        <p>جميع الحقوق محفوظة &copy; 2024</p>
+    </footer>
+</body>
+</html>

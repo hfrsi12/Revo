@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/style.css">
+    <title>صفحة المسؤول</title>
+    <style>
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div id="navbar">
+            <img src="./USDT/index-recharge-icon2-5b8127ee.png" alt="لوجو الموقع">
+            <nav>
+                <!-- القائمة هنا -->
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <section id="admin-section">
+            <h2>صفحة المسؤول</h2>
+            <h3>المستخدمين المسجلين</h3>
+            <ul id="registered-users">
+                <!-- تمثيل لقائمة المستخدمين المسجلين -->
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 موقع الاستثمار. جميع الحقوق محفوظة.</p>
+    </footer>
+
+    <!-- نموذج لتعديل بيانات المستخدم -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>تعديل بيانات المستخدم</h2>
+            <form id="editUserForm">
+                <label for="editUsername">اسم المستخدم:</label>
+                <input type="text" id="editUsername" name="editUsername" disabled>
+                
+                <label for="editEmail">البريد الإلكتروني:</label>
+                <input type="email" id="editEmail" name="editEmail" required>
+                
+                <label for="editBalance">الرصيد:</label>
+                <input type="number" id="editBalance" name="editBalance" required>
+
+                <button type="submit">حفظ التعديلات</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var currentUser = localStorage.getItem('currentUser');
+        var users = JSON.parse(localStorage.getItem('users')) || {};
+
+        window.onload = function() {
+            displayRegisteredUsers();
+        };
+
+        function displayRegisteredUsers() {
+            var registeredUsersList = document.getElementById('registered-users');
+            registeredUsersList.innerHTML = '';
+
+            for (var username in users) {
+                if (users.hasOwnProperty(username)) {
+                    var listItem = document.createElement('li');
+                    listItem.textContent = username;
+
+                    // إضافة زر للتعديل
+                    var editButton = document.createElement('button');
+                    editButton.textContent = 'تعديل';
+                    editButton.onclick = (function(username) {
+                        return function() { openEditModal(username); }
+                    })(username);
+                    listItem.appendChild(editButton);
+
+                    // إضافة زر للحذف
+                    var deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'حذف';
+                    deleteButton.onclick = (function(username) {
+                        return function() { confirmDelete(username); }
+                    })(username);
+                    listItem.appendChild(deleteButton);
+
+                    // عرض العروض النشطة وعدد الدخول اليومي
+                    var userOffers = users[username].offers || [];
+                    var dailyLogins = users[username].dailyLogins || 0;
+
+                    var detailsSpan = document.createElement('span');
+                    detailsSpan.textContent = ' - عروض: ' + userOffers.length + ', دخول يومي: ' + dailyLogins;
+                    listItem.appendChild(detailsSpan);
+
+                    registeredUsersList.appendChild(listItem);
+                }
+            }
+        }
+
+        function openEditModal(username) {
+            // جلب بيانات المستخدم للعرض في النموذج
+            var user = users[username];
+            var editUsernameInput = document.getElementById('editUsername');
+            var editEmailInput = document.getElementById('editEmail');
+            var editBalanceInput = document.getElementById('editBalance');
+
+            editUsernameInput.value = username;
+            editEmailInput.value = user.email || '';
+            editBalanceInput.value = user.balance || '';
+
+            // عرض النموذج المنبثق
+            var modal = document.getElementById('editUserModal');
+            modal.style.display = 'block';
+
+            // عند الضغط على زر الإغلاق (x)، إخفاء النموذج
+            var closeBtn = modal.querySelector('.close');
+            closeBtn.onclick = function() {
+                modal.style.display = 'none';
+            };
+
+            // عند الضغط على زر حفظ التعديلات
+            var editForm = document.getElementById('editUserForm');
+            editForm.onsubmit = function(event) {
+                event.preventDefault();
+                
+                // تحديث بيانات المستخدم في قاعدة البيانات أو التخزين المؤقت
+                user.email = editEmailInput.value;
+                user.balance = editBalanceInput.value;
+
+                // تحديث بيانات المستخدم في التخزين المؤقت
+                users[username] = user;
+                localStorage.setItem('users', JSON.stringify(users));
+
+                // إغلاق النموذج وإعادة عرض قائمة المستخدمين
+                modal.style.display = 'none';
+                displayRegisteredUsers();
+            };
+        }
+
+        function confirmDelete(username) {
+            if (confirm('هل أنت متأكد أنك تريد حذف المستخدم: ' + username + '؟')) {
+                deleteUser(username);
+            }
+        }
+
+        function deleteUser(username) {
+            // حذف المستخدم من التخزين المؤقت
+            delete users[username];
+            localStorage.setItem('users', JSON.stringify(users));
+            displayRegisteredUsers(); // إعادة عرض قائمة المستخدمين بعد الحذف
+        }
+    </script>
+</body>
+</html>
